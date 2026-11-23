@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Privacy and limits | PII Shield{% endblock %}
+{% block content %}
+<section class="wrap page">
+  <h1 class="page-title">Privacy and limits</h1>
+  <p class="lead">A tool that handles personal data should be clear about what it does with it.</p>
+  <div class="prose">
+    <h2>What PII Shield stores</h2>
+    <p>Nothing you submit is written to a database or to disk. Text and uploaded files are held in memory while the scan runs and are discarded when the response is sent. Server logs record only the number of characters scanned and findings returned, never the content.</p>
+    <p>The page sets one cookie, a random security token that protects the form against cross-site requests. It holds no personal information.</p>
+    <h2>Protections built in</h2>
+    <ul>
+      <li>Strict Content Security Policy, with no third-party scripts</li>
+      <li>CSRF protection on the form and request limits per IP address</li>
+      <li>Size limits: {{ '{:,}'.format(max_chars) }} characters of text, 256 KB per uploaded file</li>
+      <li>Responses to scans are marked <code>no-store</code> so browsers and proxies do not cache them</li>
+      <li>Fonts load from Google Fonts. Self-host them if that matters for your deployment</li>
+    </ul>
+    <h2>Limits you should know about</h2>
+    <ul>
+      <li>Detection is pattern-based and will miss some data and flag some harmless numbers.</li>
+      <li>Aadhaar checks confirm that a number is structurally valid, not that it belongs to a real person.</li>
+      <li>Names and addresses are not detected.</li>
+      <li>If you run this over plain HTTP, anything you paste can be read on the network. Use HTTPS.</li>
+    </ul>
+    <p>Use fake data when you try the tool, and do not paste anything you are not allowed to process.</p>
+  </div>
+</section>
+{% endblock %}

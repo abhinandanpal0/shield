@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}API | PII Shield{% endblock %}
+{% block content %}
+<section class="wrap page">
+  <h1 class="page-title">JSON API</h1>
+  <p class="lead">Scan text from scripts, pipelines or other apps. Requests are limited to {{ '{:,}'.format(max_chars) }} characters and {{ limit }} requests per minute for each IP address.</p>
+
+  <div class="prose">
+    <h2>Scan text</h2>
+    <p><code>POST /api/v1/scan</code> with a JSON body.</p>
+  </div>
+  <div class="panel code-panel">
+<pre class="code">curl -X POST {{ request.host_url }}api/v1/scan \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Mail meera@example.com or call 98765 43210",
+    "style": "label",
+    "detectors": ["email", "phone"],
+    "include_values": false
+  }'</pre>
+  </div>
+
+  <div class="prose">
+    <h3>Request fields</h3>
+    <dl class="defs">
+      <dt>text</dt><dd>Required string to scan.</dd>
+      <dt>style</dt><dd>Optional. <code>mask</code> (default), <code>label</code> or <code>block</code>.</dd>
+      <dt>detectors</dt><dd>Optional list of detector ids. Leave it out to use all of them.</dd>
+      <dt>include_values</dt><dd>Optional boolean. When <code>true</code>, each finding includes the original value. Defaults to <code>false</code>.</dd>
+    </dl>
+    <h3>Response</h3>
+  </div>
+  <div class="panel code-panel">
+<pre class="code">{
+  "summary": {
+    "total": 2,
+    "by_severity": {"high": 0, "medium": 2, "low": 0},
+    "by_type": [{"label": "Email address", "severity": "medium", "count": 1}, ...],
+    "risk": "medium"
+  },
+  "findings": [
+    {"type": "email", "label": "Email address", "severity": "medium",
+     "confidence": "high", "masked": "m***@example.com",
+     "start": 5, "end": 21, "line": 1, "column": 6}
+  ],
+  "redacted_text": "Mail [EMAIL] or call [PHONE]"
+}</pre>
+  </div>
+
+  <div class="prose">
+    <h2>Other endpoints</h2>
+    <dl class="defs">
+      <dt><code>GET /api/v1/detectors</code></dt><dd>Lists detector ids, severity, validation rules and examples.</dd>
+      <dt><code>GET /healthz</code></dt><dd>Returns <code>{"status": "ok"}</code> for uptime checks.</dd>
+    </dl>
+    <h2>Errors</h2>
+    <p>Errors return JSON with <code>error</code> and <code>message</code>. Status codes: 400 for invalid input, 413 for text over the limit, 429 when rate limited (check the <code>Retry-After</code> header).</p>
+    <h2>Detector ids</h2>
+    <p class="ids">{% for d in detectors %}<code>{{ d.id }}</code> {% endfor %}</p>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap hero">
+  <div class="hero-copy">
+    <h1>Find personal data before you share it.</h1>
+    <p class="lead">Paste a message, log or spreadsheet export. PII Shield highlights Aadhaar and PAN numbers, UPI IDs, cards, phone numbers and more, then gives you a clean copy to send.</p>
+    <ul class="checks">
+      <li>Checksums cut false alarms on Aadhaar and card numbers</li>
+      <li>Three redaction styles, with a download for the result</li>
+      <li>Your text is processed in memory and never stored</li>
+    </ul>
+  </div>
+  <figure class="hero-doc" aria-hidden="true">
+    <figcaption>Support ticket, redacted</figcaption>
+    <p>Send the invoice to <mark>meera.nair@example.com</mark> and call <mark>98765 43210</mark> if the payment fails. Her PAN is <mark>ABCPE1234F</mark> and the refund goes to the UPI ID <mark>meera@okhdfcbank</mark>.</p>
+  </figure>
+</section>
+
+<section class="wrap" id="scanner">
+  <form method="post" action="{{ url_for('index') }}#results" enctype="multipart/form-data" class="panel scanner" id="scan-form" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="field-head">
+      <label for="text">Text to scan</label>
+      <div class="field-tools">
+        <button type="button" class="link-btn" id="load-sample" data-sample="{{ sample }}">Load sample data</button>
+        <button type="button" class="link-btn" id="clear-text">Clear</button>
+      </div>
+    </div>
+    {% if error %}<p class="alert" role="alert">{{ error }}</p>{% endif %}
+    <textarea id="text" name="text" rows="9" maxlength="{{ max_chars }}" spellcheck="false" placeholder="Paste text here, or upload a file below.">{{ text }}</textarea>
+    <div class="field-foot">
+      <span><span id="char-count">0</span> of {{ '{:,}'.format(max_chars) }} characters</span>
+      <label class="file-pick">Upload a file
+        <input type="file" name="file" id="file" accept=".txt,.csv,.tsv,.log,.md,.json">
+      </label>
+      <span id="file-name" class="muted" aria-live="polite"></span>
+    </div>
+
+    <div class="options">
+      <fieldset class="seg">
+        <legend>Redaction style</legend>
+        <div class="seg-row">
+          {% for key, label in style_labels.items() %}
+          <label class="seg-opt"><input type="radio" name="style" value="{{ key }}" {% if style == key %}checked{% endif %}><span>{{ label }}</span></label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      <details class="types">
+        <summary>Data types to look for <span class="muted">({{ enabled|length }} of {{ detectors|length }} selected)</span></summary>
+        <div class="type-grid">
+          {% for d in detectors %}
+          <label class="check"><input type="checkbox" name="detectors" value="{{ d.id }}" {% if d.id in enabled %}checked{% endif %}> {{ d.label }}</label>
+          {% endfor %}
+        </div>
+        <p class="type-actions"><button type="button" class="link-btn" data-toggle-all="1">Select all</button> <button type="button" class="link-btn" data-toggle-all="0">Select none</button></p>
+      </details>
+    </div>
+
+    <div class="submit-row">
+      <button type="submit" class="btn" id="scan-btn">Scan text</button>
+      <p class="muted small">Processed in memory. Nothing is saved.</p>
+    </div>
+  </form>
+</section>
+
+{% if results %}
+{% set s = results.summary %}
+<section class="wrap results" id="results" aria-labelledby="results-title" tabindex="-1">
+  <div class="results-head">
+    <h2 id="results-title">Scan results</h2>
+    {% if notice %}<p class="muted small">{{ notice }}</p>{% endif %}
+  </div>
+
+  <div class="summary">
+    <div class="stat"><span class="num">{{ s.total }}</span><span class="cap">item{{ '' if s.total == 1 else 's' }} found</span></div>
+    <div class="stat risk risk-{{ s.risk }}"><span class="num">{{ {'none':'None','low':'Low','medium':'Medium','high':'High'}[s.risk] }}</span><span class="cap">exposure level</span></div>
+    <div class="stat-split">
+      <span class="pill sev-high">{{ s.by_severity.high }} high</span>
+      <span class="pill sev-medium">{{ s.by_severity.medium }} medium</span>
+      <span class="pill sev-low">{{ s.by_severity.low }} low</span>
+    </div>
+  </div>
+
+  {% if results.findings %}
+  <div class="panel viewer">
+    <div class="viewer-bar">
+      <div class="tabs" role="tablist" aria-label="Text view">
+        <button type="button" role="tab" class="tab" id="tab-original" aria-controls="view-original" aria-selected="true">Highlighted</button>
+        <button type="button" role="tab" class="tab" id="tab-redacted" aria-controls="view-redacted" aria-selected="false">Redacted</button>
+      </div>
+      <div class="viewer-actions">
+        <button type="button" class="btn small ghost" id="copy-btn">Copy redacted text</button>
+        <button type="button" class="btn small ghost" id="download-btn">Download .txt</button>
+      </div>
+    </div>
+    <div class="view" id="view-original" role="tabpanel" aria-labelledby="tab-original">
+      <pre class="doc">{% for p in results.original_segments %}{% if p.i is none %}{{ p.text }}{% else %}<mark class="hit sev-{{ p.sev }}" title="{{ p.label }}">{{ p.text }}</mark>{% endif %}{% endfor %}</pre>
+    </div>
+    <div class="view" id="view-redacted" role="tabpanel" aria-labelledby="tab-redacted">
+      <pre class="doc" id="redacted-out">{% for p in results.redacted_segments %}{% if p.i is none %}{{ p.text }}{% else %}<span class="rd rd-{{ results.style }}" title="{{ p.label }}">{{ p.text }}</span>{% endif %}{% endfor %}</pre>
+    </div>
+    <p class="status" id="copy-status" role="status" aria-live="polite"></p>
+  </div>
+
+  <div class="panel table-panel">
+    <div class="table-head">
+      <h3>Details</h3>
+      <button type="button" class="link-btn" id="reveal-btn" aria-pressed="false">Show original values</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Type</th><th scope="col">Severity</th><th scope="col">Confidence</th><th scope="col">Value</th><th scope="col">Location</th></tr></thead>
+        <tbody>
+        {% for f in results.findings %}
+          <tr>
+            <td>{{ f.label }}</td>
+            <td><span class="pill sev-{{ f.severity }}">{{ f.severity }}</span></td>
+            <td><span class="conf conf-{{ f.confidence }}">{{ f.confidence }}</span></td>
+            <td class="mono"><span class="v-masked">{{ f.masked }}</span><span class="v-orig" hidden>{{ f.value }}</span></td>
+            <td class="muted">Line {{ f.line }}, col {{ f.column }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="muted small table-note">Low confidence means the format matched but a checksum or structure rule did not. Check these by hand.</p>
+  </div>
+  {% else %}
+  <div class="panel empty">
+    <h3>No supported personal data found</h3>
+    <p>The scan checked {{ results.characters }} characters across {{ results.lines }} line{{ '' if results.lines == 1 else 's' }}. Names, street addresses and free-form details are not detected, so read the text once more before you share it.</p>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="wrap steps">
+  <div>
+    <h3>Scan</h3>
+    <p>Paste text or upload a .txt, .csv, .log, .md or .json file up to {{ (max_chars // 1000) }}k characters.</p>
+  </div>
+  <div>
+    <h3>Review</h3>
+    <p>Each hit shows its type, severity and confidence. Reveal the original value only when you need it.</p>
+  </div>
+  <div>
+    <h3>Share the safe copy</h3>
+    <p>Copy or download the redacted text, or call the <a href="{{ url_for('api_docs') }}">JSON API</a> from your own tools.</p>
+  </div>
+</section>
+{% endblock %}

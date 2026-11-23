@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}How it works | PII Shield{% endblock %}
+{% block content %}
+<section class="wrap page">
+  <h1 class="page-title">How detection works</h1>
+  <p class="lead">PII Shield uses patterns and checksums, not a trained model. That makes results predictable and explainable, and it also sets the limits of what it can find.</p>
+
+  <div class="prose">
+    <h2>What happens to your text</h2>
+    <p>Each data type has a pattern that finds candidates. A validator then checks the candidate: Aadhaar numbers go through the Verhoeff checksum, cards through the Luhn checksum, dates must exist on the calendar, and IP address parts must be 0 to 255. Matches that cannot be real are dropped. Matches that fail a softer rule are kept and marked low confidence so you can check them yourself.</p>
+    <p>When two patterns overlap, the more specific one wins. A card number is never also reported as a phone number, and a UPI ID is never also reported as an email address.</p>
+  </div>
+
+  <h2 class="section-title">Data types</h2>
+  <div class="panel table-panel">
+    <div class="table-wrap">
+      <table class="wide">
+        <thead><tr><th scope="col">Type</th><th scope="col">Severity</th><th scope="col">What it matches</th><th scope="col">Validation</th><th scope="col">Fake example</th></tr></thead>
+        <tbody>
+        {% for d in detectors %}
+          <tr>
+            <td>{{ d.label }}</td>
+            <td><span class="pill sev-{{ d.severity }}">{{ d.severity }}</span></td>
+            <td>{{ d.description }}</td>
+            <td>{{ d.validation_note }}</td>
+            <td class="mono">{{ d.example }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="prose">
+    <h2>Redaction styles</h2>
+    <dl class="defs">
+      <dt>Partial mask</dt><dd>Keeps a small, low-risk part, such as the last four digits of a card or the email domain, so people can still tell records apart.</dd>
+      <dt>Type label</dt><dd>Replaces each item with its type, such as [EMAIL] or [PAN]. Best for sharing logs and tickets.</dd>
+      <dt>Solid block</dt><dd>Replaces every character with a block. Reveals nothing, including length patterns you may want to keep.</dd>
+    </dl>
+    <h2>What it does not find</h2>
+    <p>Names, street addresses, job titles, medical details and anything written in free-form prose are not detected. Numbers with spaces or typos in unexpected places can be missed, and ordinary numbers can occasionally match. Treat the scan as a first pass, not a guarantee.</p>
+  </div>
+</section>
+{% endblock %}

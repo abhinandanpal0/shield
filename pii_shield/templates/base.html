@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}PII Shield | Find and redact personal data{% endblock %}</title>
+  <meta name="description" content="{% block description %}Find personal data such as Aadhaar, PAN, UPI IDs, cards and emails in text, then copy a redacted version. Nothing you paste is stored.{% endblock %}">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="{{ url_for('static', filename='js/boot.js') }}"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap bar">
+      <a class="brand" href="{{ url_for('index') }}" aria-label="PII Shield home">
+        <svg class="mark-logo" viewBox="0 0 28 28" aria-hidden="true"><rect x="2" y="3" width="24" height="5" rx="1.5"/><rect x="2" y="12" width="15" height="5" rx="1.5"/><rect x="2" y="21" width="20" height="5" rx="1.5" class="hl"/></svg>
+        <span>PII Shield</span>
+      </a>
+      <nav aria-label="Main">
+        <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>Scanner</a>
+        <a href="{{ url_for('how_it_works') }}" {% if request.endpoint == 'how_it_works' %}aria-current="page"{% endif %}>How it works</a>
+        <a href="{{ url_for('api_docs') }}" {% if request.endpoint == 'api_docs' %}aria-current="page"{% endif %}>API</a>
+        <a href="{{ url_for('privacy') }}" {% if request.endpoint == 'privacy' %}aria-current="page"{% endif %}>Privacy</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main">{% block content %}{% endblock %}</main>
+  <footer class="site-footer">
+    <div class="wrap foot">
+      <p>PII Shield finds common identifier patterns. It can miss data and flag harmless numbers, so review results before you share anything.</p>
+      <p><a href="{{ url_for('privacy') }}">Privacy and limits</a></p>
+    </div>
+  </footer>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>

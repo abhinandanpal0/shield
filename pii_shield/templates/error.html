@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | PII Shield{% endblock %}
+{% block content %}
+<section class="wrap page narrow center-block">
+  <p class="status-code">{{ status }}</p>
+  <h1 class="page-title">{{ title }}</h1>
+  <p class="lead">{{ message }}</p>
+  <p><a class="btn" href="{{ url_for('index') }}">Back to the scanner</a></p>
+</section>
+{% endblock %}
